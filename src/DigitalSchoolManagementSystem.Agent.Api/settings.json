@@ -6,13 +6,14 @@
     "MaxToolIterations": 6,
     "MaxHistoryMessages": 20,
     "MaxUserMessageChars": 2000,
-    "RequestTimeoutSeconds": 30,
+    "RequestTimeoutSeconds": 45,
+    "MaxRetries": 3,
     "ConversationIdleMinutes": 30,
     "RequestsPerMinutePerUser": 20
   },
   "Providers": {
     "Gemini": {
-      "Model": "gemini-2.5-flash",
+      "Model": "gemini-3.8-flash",
       "ApiKey": ""
     },
     "OpenAI": {

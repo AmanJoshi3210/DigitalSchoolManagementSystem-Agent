@@ -20,6 +20,8 @@ namespace DigitalSchoolManagementSystem.Agent.Api.Options
         public int MaxHistoryMessages { get; set; } = 20;
         public int MaxUserMessageChars { get; set; } = 2000;
         public int RequestTimeoutSeconds { get; set; } = 30;
+        // Retries for transient provider errors (429 / 5xx, e.g. Gemini "model is experiencing high demand").
+        public int MaxRetries { get; set; } = 3;
         public int ConversationIdleMinutes { get; set; } = 30;
         public int RequestsPerMinutePerUser { get; set; } = 20;
     }

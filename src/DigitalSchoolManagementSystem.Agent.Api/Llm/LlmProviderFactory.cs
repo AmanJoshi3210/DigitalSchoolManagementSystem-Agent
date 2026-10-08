@@ -31,11 +31,33 @@ namespace DigitalSchoolManagementSystem.Agent.Api.Llm
         {
             var settings = ResolveSettings(agent, providers);
 
+            var maxRetries = Math.Max(0, agent.MaxRetries);
+
+            // Each SDK retries transient failures (429 / 5xx) with exponential backoff; the
+            // Gemini SDK only does so when RetryOptions is set explicitly.
             return agent.Provider switch
             {
-                LlmProvider.Gemini => new Google.GenAI.Client(apiKey: settings.ApiKey).AsIChatClient(settings.Model),
-                LlmProvider.OpenAI => new OpenAI.Chat.ChatClient(settings.Model, settings.ApiKey).AsIChatClient(),
-                LlmProvider.Claude => new AnthropicClient { ApiKey = settings.ApiKey }.AsIChatClient(settings.Model, agent.MaxOutputTokens),
+                LlmProvider.Gemini => new Google.GenAI.Client(
+                        apiKey: settings.ApiKey,
+                        httpOptions: new Google.GenAI.Types.HttpOptions
+                        {
+                            RetryOptions = new Google.GenAI.Types.HttpRetryOptions
+                            {
+                                Attempts = maxRetries + 1,
+                                InitialDelay = 1.0,
+                                MaxDelay = 8.0,
+                                ExpBase = 2.0,
+                                Jitter = 0.5
+                            }
+                        })
+                    .AsIChatClient(settings.Model),
+                LlmProvider.OpenAI => new OpenAI.Chat.ChatClient(
+                        settings.Model,
+                        new System.ClientModel.ApiKeyCredential(settings.ApiKey),
+                        new OpenAI.OpenAIClientOptions { RetryPolicy = new System.ClientModel.Primitives.ClientRetryPolicy(maxRetries) })
+                    .AsIChatClient(),
+                LlmProvider.Claude => new AnthropicClient { ApiKey = settings.ApiKey, MaxRetries = maxRetries }
+                    .AsIChatClient(settings.Model, agent.MaxOutputTokens),
                 _ => throw new InvalidOperationException($"Unsupported LLM provider '{agent.Provider}'.")
             };
         }

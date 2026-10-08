@@ -162,9 +162,19 @@ namespace DigitalSchoolManagementSystem.Agent.Tests
     {
         public UnconfiguredAgentApiFactory()
         {
+            // An empty env var can't override settings.json on Windows (setting "" deletes it), so pick
+            // a provider and blank its key via a value that is whitespace - ResolveSettings treats it as missing.
+            // This keeps the test independent of any key a developer has put in settings.json locally.
             Environment.SetEnvironmentVariable("Jwt__Key", TestJwt.Key);
-            Environment.SetEnvironmentVariable("Providers__Gemini__ApiKey", null);
-            Environment.SetEnvironmentVariable("Agent__Provider", "Gemini");
+            Environment.SetEnvironmentVariable("Agent__Provider", "Claude");
+            Environment.SetEnvironmentVariable("Providers__Claude__ApiKey", " ");
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            Environment.SetEnvironmentVariable("Agent__Provider", null);
+            Environment.SetEnvironmentVariable("Providers__Claude__ApiKey", null);
+            base.Dispose(disposing);
         }
 
         protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseEnvironment("Testing");

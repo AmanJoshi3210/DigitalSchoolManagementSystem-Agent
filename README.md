@@ -36,7 +36,7 @@ Conversation history is kept in memory for each student and conversation. It exp
 ```jsonc
 "Agent": { "Provider": "Gemini", ... },          // Gemini | OpenAI | Claude
 "Providers": {
-  "Gemini": { "Model": "gemini-2.5-flash", "ApiKey": "" },
+  "Gemini": { "Model": "gemini-3.8-flash", "ApiKey": "" },
   "OpenAI": { "Model": "gpt-5-mini",       "ApiKey": "" },
   "Claude": { "Model": "claude-sonnet-5-5","ApiKey": "" }
 },
