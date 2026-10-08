@@ -25,6 +25,12 @@ namespace DigitalSchoolManagementSystem.Agent.Tests
             Environment.SetEnvironmentVariable("Agent__Provider", "Gemini");
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            Environment.SetEnvironmentVariable("Providers__Gemini__ApiKey", null);
+            base.Dispose(disposing);
+        }
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Testing");
@@ -50,6 +56,15 @@ namespace DigitalSchoolManagementSystem.Agent.Tests
         }
     }
 
+    // Endpoint test classes configure the host through process-wide environment variables,
+    // so they must not run in parallel with each other.
+    [CollectionDefinition(Name, DisableParallelization = true)]
+    public class AgentApiCollection
+    {
+        public const string Name = "Agent API host";
+    }
+
+    [Collection(AgentApiCollection.Name)]
     public class ChatEndpointTests(AgentApiFactory factory) : IClassFixture<AgentApiFactory>
     {
         private HttpClient Client(string? token)
@@ -139,6 +154,51 @@ namespace DigitalSchoolManagementSystem.Agent.Tests
             var response = await Client(TestJwt.Create()).DeleteAsync($"/agent/chat/{Guid.NewGuid():N}");
 
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        }
+    }
+
+    // No LLM key: the service must still start, report it, and refuse chat with 503.
+    public class UnconfiguredAgentApiFactory : WebApplicationFactory<Program>
+    {
+        public UnconfiguredAgentApiFactory()
+        {
+            Environment.SetEnvironmentVariable("Jwt__Key", TestJwt.Key);
+            Environment.SetEnvironmentVariable("Providers__Gemini__ApiKey", null);
+            Environment.SetEnvironmentVariable("Agent__Provider", "Gemini");
+        }
+
+        protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseEnvironment("Testing");
+    }
+
+    [Collection(AgentApiCollection.Name)]
+    public class UnconfiguredChatEndpointTests(UnconfiguredAgentApiFactory factory) : IClassFixture<UnconfiguredAgentApiFactory>
+    {
+        [Fact]
+        public async Task Health_reports_unconfigured()
+        {
+            var body = await factory.CreateClient().GetStringAsync("/agent/health");
+
+            Assert.Contains("\"status\":\"unconfigured\"", body);
+        }
+
+        [Fact]
+        public async Task Chat_returns_503_with_a_friendly_message()
+        {
+            var client = factory.CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestJwt.Create());
+
+            var response = await client.PostAsJsonAsync("/agent/chat", new { message = "How do I apply?" });
+
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+            Assert.Contains("isn't set up yet", await response.Content.ReadAsStringAsync());
+        }
+
+        [Fact]
+        public async Task Unauthenticated_requests_are_still_rejected()
+        {
+            var response = await factory.CreateClient().PostAsJsonAsync("/agent/chat", new { message = "hi" });
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
     }
 }

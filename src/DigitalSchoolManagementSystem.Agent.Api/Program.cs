@@ -38,17 +38,32 @@ var providersOptions = builder.Configuration.GetSection(ProvidersOptions.Section
 var backendOptions = builder.Configuration.GetSection(BackendOptions.SectionName).Get<BackendOptions>() ?? new BackendOptions();
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 
-// Fail fast on startup rather than on the first student message.
-LlmProviderFactory.ResolveSettings(agentOptions, providersOptions);
+// Without Jwt:Key nothing can be authenticated - refuse to start.
 if (string.IsNullOrWhiteSpace(jwtOptions.Key))
     throw new InvalidOperationException("Jwt:Key is not configured. It must be the same key the DSMS API uses (set Jwt__Key).");
 
+// A missing LLM key is not fatal: the service runs "unconfigured" (health says so, chat returns 503)
+// so the rest of a container stack isn't taken down by a restart loop.
+string? llmProblem = null;
+try
+{
+    LlmProviderFactory.ResolveSettings(agentOptions, providersOptions);
+}
+catch (InvalidOperationException ex)
+{
+    llmProblem = ex.Message;
+}
+builder.Services.AddSingleton(new AssistantStatus(llmProblem));
+
 // --- LLM ---------------------------------------------------------------------------------
-builder.Services.AddSingleton<IChatClient>(sp =>
-    LlmProviderFactory.WithAgentPipeline(
-        LlmProviderFactory.CreateInnerClient(agentOptions, providersOptions),
-        agentOptions,
-        sp.GetRequiredService<ILoggerFactory>()));
+if (llmProblem is null)
+{
+    builder.Services.AddSingleton<IChatClient>(sp =>
+        LlmProviderFactory.WithAgentPipeline(
+            LlmProviderFactory.CreateInnerClient(agentOptions, providersOptions),
+            agentOptions,
+            sp.GetRequiredService<ILoggerFactory>()));
+}
 
 // --- Knowledge, agent, backend -------------------------------------------------------------
 builder.Services.AddSingleton(KnowledgeBase.LoadFrom(Path.Combine(AppContext.BaseDirectory, "Knowledge")));
@@ -122,8 +137,15 @@ app.UseRateLimiter();
 
 app.MapAgentEndpoints();
 
-app.Logger.LogInformation("DSMS Student Assistant using provider {Provider} (model {Model}), backend {Backend}",
-    agentOptions.Provider, providersOptions.For(agentOptions.Provider).Model, backendOptions.BaseUrl);
+if (llmProblem is null)
+{
+    app.Logger.LogInformation("DSMS Student Assistant using provider {Provider} (model {Model}), backend {Backend}",
+        agentOptions.Provider, providersOptions.For(agentOptions.Provider).Model, backendOptions.BaseUrl);
+}
+else
+{
+    app.Logger.LogWarning("DSMS Student Assistant is UNCONFIGURED - chat will return 503. {Problem}", llmProblem);
+}
 
 app.Run();
 

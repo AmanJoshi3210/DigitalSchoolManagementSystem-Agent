@@ -18,20 +18,21 @@ namespace DigitalSchoolManagementSystem.Agent.Api.Endpoints
         {
             var group = app.MapGroup("/agent");
 
-            group.MapGet("/health", (IOptions<AgentOptions> agent, IOptions<ProvidersOptions> providers) => Results.Ok(new
+            group.MapGet("/health", (AssistantStatus status, IOptions<AgentOptions> agent, IOptions<ProvidersOptions> providers) => Results.Ok(new
             {
-                status = "ok",
+                status = status.IsConfigured ? "ok" : "unconfigured",
                 provider = agent.Value.Provider.ToString(),
-                model = providers.Value.For(agent.Value.Provider).Model
+                model = providers.Value.For(agent.Value.Provider).Model,
+                detail = status.IsConfigured ? null : $"No API key configured for {agent.Value.Provider}."
             })).AllowAnonymous();
 
             group.MapPost("/chat", ChatAsync)
                 .RequireAuthorization(policy => policy.RequireRole("Student"))
                 .RequireRateLimiting(RateLimitPolicy);
 
-            group.MapDelete("/chat/{conversationId}", (string conversationId, ClaimsPrincipal user, StudentAgent agent) =>
+            group.MapDelete("/chat/{conversationId}", (string conversationId, ClaimsPrincipal user, ConversationStore conversations) =>
             {
-                agent.Reset(CurrentUserId(user), conversationId);
+                conversations.Remove(CurrentUserId(user), conversationId);
                 return Results.NoContent();
             }).RequireAuthorization(policy => policy.RequireRole("Student"));
 
@@ -41,11 +42,20 @@ namespace DigitalSchoolManagementSystem.Agent.Api.Endpoints
         private static async Task<IResult> ChatAsync(
             ChatRequest request,
             ClaimsPrincipal user,
-            StudentAgent agent,
+            AssistantStatus status,
             IOptions<AgentOptions> options,
             ILoggerFactory loggerFactory,
             HttpContext httpContext)
         {
+            if (!status.IsConfigured)
+            {
+                return Results.Json(
+                    new { message = "The assistant isn't set up yet. Please try again later or contact staff in Messages." },
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+
+            // Resolved only once configured - StudentAgent needs the IChatClient, which isn't registered otherwise.
+            var agent = httpContext.RequestServices.GetRequiredService<StudentAgent>();
             var settings = options.Value;
             var message = request.Message?.Trim();
 

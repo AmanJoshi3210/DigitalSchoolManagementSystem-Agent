@@ -57,7 +57,13 @@ dotnet user-secrets set "Jwt:Key" "<same Jwt:Key as DigitalSchoolManagementSyste
 
 Or with environment variables: `Providers__Gemini__ApiKey`, `Providers__OpenAI__ApiKey`, `Providers__Claude__ApiKey`, `Jwt__Key`.
 
-The app **refuses to start** if the selected provider has no key or `Jwt:Key` is missing, and the error names the variable to set.
+- **Missing `Jwt:Key`:** the app refuses to start.
+- **Missing key for the selected provider:** the app still starts, so a Docker stack comes up cleanly, but in an **unconfigured** state:
+  - `/agent/health` reports `"status": "unconfigured"`.
+  - Chat returns 503 with a friendly message.
+  - The startup log names the variable to set.
+
+  Add the key and restart the service.
 
 ## Document requirements
 

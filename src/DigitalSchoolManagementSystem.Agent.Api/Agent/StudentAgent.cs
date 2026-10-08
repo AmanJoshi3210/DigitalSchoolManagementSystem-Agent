@@ -70,7 +70,5 @@ namespace DigitalSchoolManagementSystem.Agent.Api.Agent
                 conversation.Gate.Release();
             }
         }
-
-        public void Reset(int userId, string conversationId) => conversations.Remove(userId, conversationId);
     }
 }
