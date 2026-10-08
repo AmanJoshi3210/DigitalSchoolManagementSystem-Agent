@@ -1,0 +1,46 @@
+{
+  "Agent": {
+    "Provider": "Gemini",
+    "Temperature": 0.3,
+    "MaxOutputTokens": 1024,
+    "MaxToolIterations": 6,
+    "MaxHistoryMessages": 20,
+    "MaxUserMessageChars": 2000,
+    "RequestTimeoutSeconds": 30,
+    "ConversationIdleMinutes": 30,
+    "RequestsPerMinutePerUser": 20
+  },
+  "Providers": {
+    "Gemini": {
+      "Model": "gemini-2.5-flash",
+      "ApiKey": ""
+    },
+    "OpenAI": {
+      "Model": "gpt-5-mini",
+      "ApiKey": ""
+    },
+    "Claude": {
+      "Model": "claude-sonnet-5-5",
+      "ApiKey": ""
+    }
+  },
+  "Backend": {
+    "BaseUrl": "http://localhost:5081/api"
+  },
+  "Jwt": {
+    "Issuer": "DigitalSchoolManagementSystem",
+    "Audience": "DigitalSchoolManagementSystemClient",
+    "Key": ""
+  },
+  "Cors": {
+    "AllowedOrigins": [ "http://localhost:5173", "http://localhost:3000", "http://localhost:5175" ]
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "System.Net.Http.HttpClient": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}

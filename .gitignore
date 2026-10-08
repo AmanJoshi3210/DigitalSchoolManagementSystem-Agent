@@ -1,0 +1,19 @@
+## .NET
+bin/
+obj/
+*.user
+TestResults/
+
+## Local overrides - may contain API keys. Use env vars or `dotnet user-secrets` instead.
+settings.Development.json
+settings.Local.json
+.env
+
+## Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+
+## OS
+.DS_Store
+Thumbs.db

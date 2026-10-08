@@ -1,0 +1,73 @@
+{
+  "_readme": "Which documents students must upload for program applications. Rules merge in order: default -> byEducationLevel[program's eligible level] -> byProgram[program name]. A later entry with the same documentType replaces an earlier one (so a program can make a default document optional, or change its notes). documentType must be one of: Passport, OfferLetter, Certificate, ProfilePhoto, Other. byEducationLevel keys: Undergraduate, Graduate, PostGraduate. byProgram keys must match the program name exactly as staff created it (case-insensitive).",
+  "default": [
+    {
+      "documentType": "ProfilePhoto",
+      "label": "Profile photo",
+      "required": true,
+      "notes": "Clear, recent, front-facing photo with a plain background.",
+      "acceptedFormats": [ "JPEG", "PNG", "WEBP", "GIF" ]
+    },
+    {
+      "documentType": "Certificate",
+      "label": "Latest academic certificate / mark sheet",
+      "required": true,
+      "notes": "Your most recent qualification certificate or final mark sheet.",
+      "acceptedFormats": [ "PDF", "JPG", "PNG" ]
+    },
+    {
+      "documentType": "Passport",
+      "label": "Passport",
+      "required": false,
+      "notes": "Required for international students and for programs that involve travel. Upload the photo/details page.",
+      "acceptedFormats": [ "PDF", "JPG", "PNG" ]
+    }
+  ],
+  "byEducationLevel": {
+    "Undergraduate": [
+      {
+        "documentType": "Certificate",
+        "label": "Higher secondary (Class 12) certificate or mark sheet",
+        "required": true,
+        "notes": "Upload the Class 12 / higher secondary pass certificate or final mark sheet.",
+        "acceptedFormats": [ "PDF", "JPG", "PNG" ]
+      }
+    ],
+    "Graduate": [
+      {
+        "documentType": "Certificate",
+        "label": "Bachelor's degree certificate or final transcript",
+        "required": true,
+        "notes": "Upload your bachelor's degree certificate, or the final-year mark sheet if the degree certificate is not issued yet.",
+        "acceptedFormats": [ "PDF", "JPG", "PNG" ]
+      }
+    ],
+    "PostGraduate": [
+      {
+        "documentType": "Certificate",
+        "label": "Master's degree certificate or final transcript",
+        "required": true,
+        "notes": "Upload your master's degree certificate or final transcripts.",
+        "acceptedFormats": [ "PDF", "JPG", "PNG" ]
+      }
+    ]
+  },
+  "byProgram": {
+    "Student Exchange Program": [
+      {
+        "documentType": "Passport",
+        "label": "Passport",
+        "required": true,
+        "notes": "A passport valid for at least 6 months beyond the exchange period.",
+        "acceptedFormats": [ "PDF", "JPG", "PNG" ]
+      },
+      {
+        "documentType": "OfferLetter",
+        "label": "Offer letter from the host institution",
+        "required": true,
+        "notes": "The admission/offer letter issued by the partner institution.",
+        "acceptedFormats": [ "PDF" ]
+      }
+    ]
+  }
+}
